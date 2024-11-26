@@ -72,7 +72,7 @@ createDB()
 createEV()
 {
 # Update the path to point to the specific directory where the JSON file is located
-CREDENTIALS_FILE="$HOME/aws-modernization-dt-orders-setup/gen/workshop-credentials.json"
+CREDENTIALS_FILE="$HOME/aws-modernization-dt-orders-setup-saas/gen/workshop-credentials.json"
 
 # Use jq to extract the values from the JSON file
 DT_BASEURL=$(jq -r '.DT_BASEURL' $CREDENTIALS_FILE)
@@ -104,8 +104,8 @@ echo "UUID: $DT_UUID"
     export DT_CONNECTION_BASE_URL="https://abcxxxxx.live.dynatrace.com"
     export DT_CONNECTION_AUTH_TOKEN="$DT_API_TOKEN"
     export DT_OPEN_TELEMETRY_ENABLE_INTEGRATION="true"
-    export Layer_ARN=arn:aws:lambda:us-east-2:725887861453:layer:Dynatrace_OneAgent_1_299_3_20240813-131707_python:1
-#    export Layer_ARN=arn:aws:lambda:us-west-2:725887861453:layer:Dynatrace_OneAgent_1_279_2_20231020-042318_python:1
+#    export Layer_ARN=arn:aws:lambda:us-east-2:725887861453:layer:Dynatrace_OneAgent_1_299_3_20240813-131707_python:1
+    export Layer_ARN=arn:aws:lambda:us-west-2:725887861453:layer:Dynatrace_OneAgent_1_279_2_20231020-042318_python:1
 #    export Layer_ARN="arn:aws:lambda:us-west-2:725887861453:layer:Dynatrace_OneAgent_1_277_3_20231004-104443_python:1"
 }   
 
