@@ -238,6 +238,12 @@ echo "Deploying Kubernetes cluster..."
 eksctl create cluster --with-oidc --ssh-access --version=1.29 --managed --name dynatrace-workshop --tags "Purpose=dynatrace-modernization-workshop" --ssh-public-key ws-default-keypair
 
 echo "Kubernetes cluster deployment complete!"
+
+echo "Deploying Dynatrace Operator"
+helm install dynatrace-operator oci://public.ecr.aws/dynatrace/dynatrace-operator --create-namespace --namespace dynatrace --atomic
+
+echo "Applying Dynakube"
+kubectl apply -f ../gen/dynakube.yaml
 }
 
 create_EKS_Workshop_Cluster_w_utilities
