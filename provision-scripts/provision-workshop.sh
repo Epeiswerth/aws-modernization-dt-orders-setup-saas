@@ -156,6 +156,25 @@ create_dt_aws(){
     }"
 }
 
+enableNewK8sExperience(){
+  curl -X POST \
+    $DT_BASEURL/api/v2/settings/objects \
+    -H "accept: application/json; charset=utf-8" \
+    -H "Authorization: Api-Token $DT_API_TOKEN" \
+    -H "Content-Type: application/json; charset=utf-8" \
+    -d "[{
+      \"schemaId\": \"builtin:app-transition.kubernetes\",
+      \"schemaVersion\": \"1.0.1\",
+      \"scope\": \"environment\",
+      \"value\": { 
+        \"kubernetesAppOptions\": {
+          \"enableKubernetesApp\": true
+        }
+      }
+    }]"
+}
+
+
 echo "==================================================================="
 echo "About to Provision Workshop for:"
 echo "$DT_BASEURL"
@@ -238,6 +257,9 @@ echo "Deploying Kubernetes cluster..."
 eksctl create cluster --with-oidc --ssh-access --version=1.29 --managed --name dynatrace-workshop --tags "Purpose=dynatrace-modernization-workshop" --ssh-public-key ws-default-keypair
 
 echo "Kubernetes cluster deployment complete!"
+
+echo "Call DT API to enable new k8s experience"
+enableNewK8sExperience
 
 echo "Deploying Dynatrace Operator"
 helm install dynatrace-operator oci://public.ecr.aws/dynatrace/dynatrace-operator --create-namespace --namespace dynatrace --atomic
