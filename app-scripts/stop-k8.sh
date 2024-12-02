@@ -4,10 +4,10 @@ echo "=========================================================="
 echo "Stopping app on k8"
 echo "=========================================================="
 
-echo "----------------------------------------------------------"
-echo "kubectl -n staging delete deploy browser-traffic"
-echo "----------------------------------------------------------"
-kubectl -n staging delete deploy browser-traffic
+#echo "----------------------------------------------------------"
+#echo "kubectl -n staging delete deploy browser-traffic"
+#echo "----------------------------------------------------------"
+#kubectl -n staging delete deploy browser-traffic
 
 echo "----------------------------------------------------------"
 echo "kubectl -n staging delete deploy load-traffic"

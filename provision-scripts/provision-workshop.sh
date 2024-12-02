@@ -262,7 +262,7 @@ echo "Call DT API to enable new k8s experience"
 enableNewK8sExperience
 
 echo "Deploying Dynatrace Operator"
-helm install dynatrace-operator oci://public.ecr.aws/dynatrace/dynatrace-operator --create-namespace --namespace dynatrace --atomic
+helm install dynatrace-operator oci://public.ecr.aws/dynatrace/dynatrace-operator --version 1.3.2 --create-namespace --namespace dynatrace --atomic --set "webhook.highAvailability=false" --set "operator.requests.cpu=20m" --set "operator.limits.cpu=null" --set "operator.requests.memory=64Mi" --set "operator.limits.memory=64Mi" --set "webhook.requests.cpu=20m" --set "webhook.limits.cpu=null" --set "webhook.requests.memory=64Mi" --set "webhook.limits.memory=128Mi" --set "csidriver.provisioner.resources.requests.cpu=50m" --set "csidriver.server.resources.requests.cpu=30m" --set "csidriver.server.resources.limits.cpu=30m"
 
 echo "Applying Dynakube"
 kubectl apply -f ../gen/dynakube.yaml

@@ -9,10 +9,10 @@ echo "kubectl create namespace staging"
 echo "----------------------------------------------------------"
 kubectl create ns staging
 
-echo "----------------------------------------------------------"
-echo "kubectl create -f manifests/dynatrace-oneagent-metadata-viewer.yaml"
-echo "----------------------------------------------------------"
-kubectl create -f manifests/dynatrace-oneagent-metadata-viewer.yaml
+#echo "----------------------------------------------------------"
+#echo "kubectl create -f manifests/dynatrace-oneagent-metadata-viewer.yaml"
+#echo "----------------------------------------------------------"
+#kubectl create -f manifests/dynatrace-oneagent-metadata-viewer.yaml
 
 echo "----------------------------------------------------------"
 echo "kubectl -n staging apply -f catalog-service.yml"
