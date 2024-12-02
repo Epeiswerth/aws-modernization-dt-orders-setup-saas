@@ -33,7 +33,7 @@ spec:
           value: "project=dt-orders service=frontend"
         resources:
           requests:
-            cpu: 500m
+            cpu: 800m
             memory: 150Mi
           limits:
             memory: 200Mi
