@@ -266,6 +266,12 @@ helm install dynatrace-operator oci://public.ecr.aws/dynatrace/dynatrace-operato
 
 echo "Applying Dynakube"
 kubectl apply -f ../gen/dynakube.yaml
+
+echo "Waiting for Dynatrace ActiveGate to be ready"
+kubectl -n dynatrace wait pod --for=condition=ready --selector=app.kubernetes.io/name=dynatrace-operator,app.kubernetes.io/component=activegate --timeout=300s
+
+kubectl apply -f ../app-scripts/easytrade
+
 }
 
 create_EKS_Workshop_Cluster_w_utilities
