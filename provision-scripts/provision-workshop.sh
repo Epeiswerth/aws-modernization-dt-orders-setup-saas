@@ -270,7 +270,9 @@ kubectl apply -f ../gen/dynakube.yaml
 echo "Waiting for Dynatrace ActiveGate to be ready"
 kubectl -n dynatrace wait pod --for=condition=ready --selector=app.kubernetes.io/name=dynatrace-operator,app.kubernetes.io/component=activegate --timeout=300s
 
-kubectl apply -f ../app-scripts/easytrade
+kubectl create namespace easytrade
+
+kubectl apply -f ../app-scripts/easytrade -n easytrade
 
 }
 
