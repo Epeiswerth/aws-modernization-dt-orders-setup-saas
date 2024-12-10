@@ -9,6 +9,9 @@ createRoleAndMapPolicies()
     aws iam attach-role-policy --role-name lambda-update-asg-role --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
     aws iam attach-role-policy --role-name lambda-update-asg-role --policy-arn arn:aws:iam::aws:policy/AutoScalingFullAccess
 
+    #list the policies after they are attached
+    aws iam list-attached-role-policies --role-name lambda-function
+
     export lambdaRoleARN=$(aws iam get-role --role-name lambda-update-asg-role --query 'Role.Arn' --output text)
     echo "lambda-update-asg-role Role ARN: $lambdaRoleARN"
 }
@@ -28,6 +31,7 @@ createLambdaFunction()
 
     # Wait a few seconds to ensure the Lambda function has been created before creating the Function URL
     sleep 5
+
     aws lambda add-permission \
         --function-name updateASGMaxSize \
         --action lambda:InvokeFunctionUrl \
