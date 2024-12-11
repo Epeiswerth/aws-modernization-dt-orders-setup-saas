@@ -30,20 +30,20 @@
 
 
 # Include and template use case specific values before installing Dashboard
-- set_fact:
-    include_dashboard_value_file: "{{ role_path }}/templates/my-use-case-dashboard.yml.j2"
+#- set_fact:
+#    include_dashboard_value_file: "{{ role_path }}/templates/my-use-case-dashboard.yml.j2"
 
-- include_role:
-    name: dashboard
-    tasks_from: template-values-file
+#- include_role:
+#    name: dashboard
+#    tasks_from: template-values-file
 
-- include_role:
-    name: dashboard
+#- include_role:
+#    name: dashboard
 
 # 
 # All other roles provided in an external use case are 
 # synched with the ACE-Box Ansible directory and can
 # therefore be sourced just like curated roles.
 # 
-- include_role:
-    name: "another-role"
+#- include_role:
+#    name: "another-role"
