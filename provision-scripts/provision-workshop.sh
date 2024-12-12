@@ -258,6 +258,17 @@ eksctl create cluster --with-oidc --ssh-access --version=1.29 --managed --name d
 
 echo "Kubernetes cluster deployment complete!"
 
+echo "Deploying K8s Autoscaler..."
+
+aws iam create-policy --policy-name eks-autoscaler-policy --policy-document file:///eks-autoscaler/eks-autoscaler-policy.json
+
+eksctl create iamserviceaccount --name cluster-autoscaler --namespace kube-system --cluster dynatrace-workshop --role-name eks-autoscaler-policy \
+    --attach-policy-arn arn:aws:iam::$AWS_ACCT_ID:policy/eks-autoscaler-policy --approve
+
+kubectl apply -f /eks-autoscaler/cluster-autoscaler.yaml
+
+echo "K8s Autoscaler deployment complete!"
+
 echo "Call DT API to enable new k8s experience"
 enableNewK8sExperience
 
