@@ -260,7 +260,7 @@ echo "Kubernetes cluster deployment complete!"
 
 echo "Deploying K8s Autoscaler..."
 
-aws iam create-policy --policy-name eks-autoscaler-policy --policy-document file:///eks-autoscaler/eks-autoscaler-policy.json
+aws iam create-policy --policy-name eks-autoscaler-policy --policy-document file://eks-autoscaler/eks-autoscaler-policy.json
 
 eksctl create iamserviceaccount --name cluster-autoscaler --namespace kube-system --cluster dynatrace-workshop --role-name eks-autoscaler-policy \
     --attach-policy-arn arn:aws:iam::$AWS_ACCT_ID:policy/eks-autoscaler-policy --approve
