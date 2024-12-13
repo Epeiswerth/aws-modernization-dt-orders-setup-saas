@@ -1,0 +1,569 @@
+metadata:
+  version: "1"
+  dependencies:
+    apps:
+      - id: dynatrace.automations
+        version: ^1.1104.4
+      - id: dynatrace.aws.connector
+        version: ^1.1.1
+  inputs:
+    - type: connection
+      schema: builtin:hyperscaler-authentication.aws.connection
+      targets:
+        - tasks.upgrade_asg_maxsize.connection
+        - tasks.describe_auto_scaling_groups.connection
+workflow:
+  title: Pending Pods- Manage EKS Autoscale Group
+  tasks:
+    upgrade_asg_maxsize:
+      name: upgrade_asg_maxsize
+      description: We strongly recommend that all Auto Scaling groups use launch
+        templates to ensure full functionality for Amazon EC2 Auto Scaling and
+        Amazon EC2
+      action: dynatrace.aws.connector:autoscaling-update-auto-scaling-group
+      input:
+        region: us-west-2
+        MaxSize: '{{ result("analyze_auto_scaling_capacity").max_capacity }}'
+        connection: ""
+        DesiredCapacity: '{{ result("analyze_auto_scaling_capacity").desired_capacity }}'
+        AutoScalingGroupName: '{{
+          result("describe_auto_scaling_groups").AutoScalingGroups[0].AutoScalingGroupName}}'
+      position:
+        x: 0
+        y: 5
+      predecessors:
+        - analyze_auto_scaling_capacity
+      conditions:
+        states:
+          analyze_auto_scaling_capacity: SUCCESS
+    analyze_pending_pods:
+      name: analyze_pending_pods
+      description: Executes DQL query
+      action: dynatrace.automations:execute-dql-query
+      input:
+        query: >-
+          fetch dt.entity.cloud_application_instance, from: -30m
+
+          | fields pod.id = id, pod.name = entity.name, pod.condition =
+          currentCondition, pod.resourceDeletionTimestamp =
+          resourceDeletionTimestamp, pod.phase = cloudApplicationInstancePhase,
+          cluster.id = clustered_by[dt.entity.kubernetes_cluster], namespace.id
+          = belongs_to[dt.entity.cloud_application_namespace], workload.id =
+          instance_of[dt.entity.cloud_application], namespace.name =
+          namespaceName, workload.name = workloadName
+
+          | lookup [
+            fetch dt.entity.kubernetes_cluster, from: -30m | fields id, cluster.name = entity.name, cluster.distribution = kubernetesDistribution, cluster.cluster_uid = kubernetesClusterId, cluster.app_enabled = appEnabled
+          ], sourceField:cluster.id, lookupField:id,
+          fields:{cluster.name,cluster.distribution,cluster.cluster_uid,cluster.app_enabled},
+          executionOrder:leftFirst
+
+          | filter cluster.cluster_uid == "{{ event()['k8s.cluster.uid'][0] }}"
+
+          | filter namespace.name == "{{ event()['k8s.namespace.name'][0] }}"
+
+          | filter workload.name == "{{ event()['k8s.workload.name'][0] }}"
+
+          //| filter workload.type == "{{ event()['k8s.workload.kind'][0] }}"
+
+          | filter pod.phase == "PENDING"
+
+          | filter isNull(pod.resourceDeletionTimestamp)
+
+          | fields pod.id, pod.name, workload.name, namespace.name, cluster.id,
+          cluster.cluster_uid, cluster.name
+      customSampleResult:
+        types:
+          - mappings:
+              pod.id:
+                type: string
+              pod.name:
+                type: string
+              cluster.id:
+                type: string
+              cluster.name:
+                type: string
+              workload.name:
+                type: string
+              namespace.name:
+                type: string
+              cluster.cluster_uid:
+                type: string
+            indexRange:
+              - 0
+              - 0
+        records:
+          - pod.id: CLOUD_APPLICATION_INSTANCE-DF046C4252903A95
+            pod.name: frontend-5b79697699-rqbzq
+            cluster.id: KUBERNETES_CLUSTER-6B9D5752EB3C9734
+            cluster.name: workshop-cluster
+            workload.name: frontend
+            namespace.name: staging
+            cluster.cluster_uid: dfe00ac8-fdec-4655-9228-5ec594365f6e
+        metadata:
+          grail:
+            query: >-
+              fetch dt.entity.cloud_application_instance, from: -30m
+
+              | fields pod.id = id, pod.name = entity.name, pod.condition =
+              currentCondition, pod.resourceDeletionTimestamp =
+              resourceDeletionTimestamp, pod.phase =
+              cloudApplicationInstancePhase, cluster.id =
+              clustered_by[dt.entity.kubernetes_cluster], namespace.id =
+              belongs_to[dt.entity.cloud_application_namespace], workload.id =
+              instance_of[dt.entity.cloud_application], namespace.name =
+              namespaceName, workload.name = workloadName
+
+              | lookup [
+                fetch dt.entity.kubernetes_cluster, from: -30m | fields id, cluster.name = entity.name, cluster.distribution = kubernetesDistribution, cluster.cluster_uid = kubernetesClusterId, cluster.app_enabled = appEnabled
+              ], sourceField:cluster.id, lookupField:id,
+              fields:{cluster.name,cluster.distribution,cluster.cluster_uid,cluster.app_enabled},
+              executionOrder:leftFirst
+
+              | filter cluster.cluster_uid ==
+              "dfe00ac8-fdec-4655-9228-5ec594365f6e"
+
+              | filter namespace.name == "staging"
+
+              | filter workload.name == "frontend"
+
+              //| filter workload.type == "deployment"
+
+              | filter pod.phase == "PENDING"
+
+              | filter isNull(pod.resourceDeletionTimestamp)
+
+              | fields pod.id, pod.name, workload.name, namespace.name,
+              cluster.id, cluster.cluster_uid, cluster.name
+            locale: und
+            queryId: b0818d57-7391-4eea-bf5d-00b7bcd2ff8c
+            sampled: false
+            timezone: Z
+            dqlVersion: V1_0
+            scannedBytes: 0
+            notifications: []
+            canonicalQuery: >-
+              fetch dt.entity.cloud_application_instance, from:-30m
+
+              | fields pod.id = id, pod.name = entity.name, pod.condition =
+              currentCondition, pod.resourceDeletionTimestamp =
+              resourceDeletionTimestamp, pod.phase =
+              cloudApplicationInstancePhase, cluster.id =
+              clustered_by[dt.entity.kubernetes_cluster], namespace.id =
+              belongs_to[dt.entity.cloud_application_namespace], workload.id =
+              instance_of[dt.entity.cloud_application], namespace.name =
+              namespaceName, workload.name = workloadName
+
+              | lookup 
+              	[
+              		fetch dt.entity.kubernetes_cluster, from:-30m
+              		| fields id, cluster.name = entity.name, cluster.distribution = kubernetesDistribution, cluster.cluster_uid = kubernetesClusterId, cluster.app_enabled = appEnabled
+              	], sourceField:cluster.id, lookupField:id, fields:{cluster.name, cluster.distribution, cluster.cluster_uid, cluster.app_enabled}, executionOrder:leftFirst
+              | filter cluster.cluster_uid ==
+              "dfe00ac8-fdec-4655-9228-5ec594365f6e"
+
+              | filter namespace.name == "staging"
+
+              | filter workload.name == "frontend"
+
+              | filter pod.phase == "PENDING"
+
+              | filter isNull(pod.resourceDeletionTimestamp)
+
+              | fields pod.id, pod.name, workload.name, namespace.name,
+              cluster.id, cluster.cluster_uid, cluster.name
+            scannedRecords: 2
+            analysisTimeframe:
+              end: 2024-12-10T09:45:59.281Z
+              start: 2024-12-10T09:15:59.281Z
+            scannedDataPoints: 0
+            executionTimeMilliseconds: 202
+      position:
+        x: 0
+        y: 1
+      predecessors: []
+      conditions:
+        states: {}
+        custom: ""
+    fetch_node_group_via_label:
+      name: fetch_node_group_via_label
+      description: Executes DQL query
+      action: dynatrace.automations:execute-dql-query
+      input:
+        query: >-
+          fetch dt.entity.kubernetes_node, from: -30m
+
+          | fields id, node.id = id, node.name = entity.name, node.labels =
+          kubernetesLabels, node.uid = kubernetesNodeUid, node.system_uid =
+          kubernetesNodeSystemUuid, cluster.id =
+          clustered_by[dt.entity.kubernetes_cluster]
+
+          // Filters: [cluster]
+
+          //| filter in(id,
+          classicEntitySelector("type(KUBERNETES_NODE),toRelationship.isClusterOfNode(type(KUBERNETES_CLUSTER),entityName.equals(workshop-cluster))"))
+
+          | filter cluster.id == "{{
+          result("analyze_pending_pods")["records"][0]["cluster.id"]}}"
+
+          | lookup [
+            timeseries {
+                valuesOp1 = sum(dt.kubernetes.pods),
+                valuesOp2 = sum(dt.kubernetes.node.pods_allocatable)
+              }, by:{dt.entity.kubernetes_node}, from: -2m
+              | fieldsAdd pods_percent = valuesOp1[] / valuesOp2[]
+              | fieldsAdd pods_percent = record(usedPercentageOfMax=arrayFirst(pods_percent),rawMaxValue=arrayFirst(valuesOp2))
+          ], sourceField:id, lookupField:dt.entity.kubernetes_node,
+          fields:{pods_percent}, executionOrder:leftFirst
+
+          | fields node.name, eks_node_group =
+          node.labels[`eks.amazonaws.com/nodegroup`], cluster.id,
+          pods_percent_of_max = pods_percent[`usedPercentageOfMax`]
+
+          | sort pods_percent_of_max desc
+      customSampleResult:
+        types:
+          - mappings:
+              node.name:
+                type: string
+              cluster.id:
+                type: string
+              eks_node_group:
+                type: string
+              pods_percent_of_max:
+                type: double
+            indexRange:
+              - 0
+              - 1
+        records:
+          - node.name: ip-192-168-52-192.ec2.internal
+            cluster.id: KUBERNETES_CLUSTER-6B9D5752EB3C9734
+            eks_node_group: ng-0afec768
+            pods_percent_of_max: 0.8620689655172413
+          - node.name: ip-192-168-0-226.ec2.internal
+            cluster.id: KUBERNETES_CLUSTER-6B9D5752EB3C9734
+            eks_node_group: ng-0afec768
+            pods_percent_of_max: 0.3793103448275862
+        metadata:
+          grail:
+            query: >-
+              fetch dt.entity.kubernetes_node, from: -30m
+
+              | fields id, node.id = id, node.name = entity.name, node.labels =
+              kubernetesLabels, node.uid = kubernetesNodeUid, node.system_uid =
+              kubernetesNodeSystemUuid, cluster.id =
+              clustered_by[dt.entity.kubernetes_cluster]
+
+              // Filters: [cluster]
+
+              //| filter in(id,
+              classicEntitySelector("type(KUBERNETES_NODE),toRelationship.isClusterOfNode(type(KUBERNETES_CLUSTER),entityName.equals(workshop-cluster))"))
+
+              | filter cluster.id == "KUBERNETES_CLUSTER-6B9D5752EB3C9734"
+
+              | lookup [
+                timeseries {
+                    valuesOp1 = sum(dt.kubernetes.pods),
+                    valuesOp2 = sum(dt.kubernetes.node.pods_allocatable)
+                  }, by:{dt.entity.kubernetes_node}, from: -2m
+                  | fieldsAdd pods_percent = valuesOp1[] / valuesOp2[]
+                  | fieldsAdd pods_percent = record(usedPercentageOfMax=arrayFirst(pods_percent),rawMaxValue=arrayFirst(valuesOp2))
+              ], sourceField:id, lookupField:dt.entity.kubernetes_node,
+              fields:{pods_percent}, executionOrder:leftFirst
+
+              | fields node.name, eks_node_group =
+              node.labels[`eks.amazonaws.com/nodegroup`], cluster.id,
+              pods_percent_of_max = pods_percent[`usedPercentageOfMax`]
+
+              | sort pods_percent_of_max desc
+            locale: und
+            queryId: 3d6ff9fd-49e3-46c9-ba6c-cdaeca48e0d8
+            sampled: false
+            timezone: Z
+            dqlVersion: V1_0
+            scannedBytes: 0
+            notifications: []
+            canonicalQuery: >-
+              fetch dt.entity.kubernetes_node, from:-30m
+
+              | fields id, node.id = id, node.name = entity.name, node.labels =
+              kubernetesLabels, node.uid = kubernetesNodeUid, node.system_uid =
+              kubernetesNodeSystemUuid, cluster.id =
+              clustered_by[dt.entity.kubernetes_cluster]
+
+              | filter cluster.id == "KUBERNETES_CLUSTER-6B9D5752EB3C9734"
+
+              | lookup 
+              	[
+              		timeseries by:{dt.entity.kubernetes_node}, from:-2m, {valuesOp1 = sum(dt.kubernetes.pods), valuesOp2 = sum(dt.kubernetes.node.pods_allocatable)}
+              		| fieldsAdd pods_percent = valuesOp1[] / valuesOp2[]
+              		| fieldsAdd pods_percent = record(usedPercentageOfMax = arrayFirst(pods_percent), rawMaxValue = arrayFirst(valuesOp2))
+              	], sourceField:id, lookupField:dt.entity.kubernetes_node, fields:{pods_percent}, executionOrder:leftFirst
+              | fields node.name, eks_node_group =
+              node.labels[`eks.amazonaws.com/nodegroup`], cluster.id,
+              pods_percent_of_max = pods_percent[usedPercentageOfMax]
+
+              | sort pods_percent_of_max desc
+            scannedRecords: 5
+            analysisTimeframe:
+              end: 2024-12-10T09:47:00.000Z
+              start: 2024-12-10T09:16:20.152Z
+            scannedDataPoints: 228
+            executionTimeMilliseconds: 69
+          metrics:
+            - fieldName: valuesOp1
+              metric.key: dt.kubernetes.pods
+            - fieldName: valuesOp2
+              metric.key: dt.kubernetes.node.pods_allocatable
+      position:
+        x: 0
+        y: 2
+      predecessors:
+        - analyze_pending_pods
+      conditions:
+        states:
+          analyze_pending_pods: SUCCESS
+    describe_auto_scaling_groups:
+      name: describe_auto_scaling_groups
+      description: Gets information about the Auto Scaling groups in the account and Region
+      action: dynatrace.aws.connector:autoscaling-describe-auto-scaling-groups
+      input:
+        region: us-west-2
+        Filters:
+          - key: tag-key
+            value: eks:nodegroup-name
+          - key: tag-value
+            value: "{{result(\"fetch_node_group_via_label\").records[0]['eks_node_group']}}"
+        connection: ""
+      customSampleResult:
+        $metadata:
+          attempts: 1
+          requestId: 91dafaa3-9d05-4bbc-9965-e2551211f5e1
+          httpStatusCode: 200
+          totalRetryDelay: 0
+        AutoScalingGroups:
+          - Tags:
+              - Key: eks:cluster-name
+                Value: dynatrace-workshop
+                ResourceId: eks-ng-0afec768-3cc9d54e-6f03-c581-b046-78c1c8e54e9d
+                ResourceType: auto-scaling-group
+                PropagateAtLaunch: true
+              - Key: eks:nodegroup-name
+                Value: ng-0afec768
+                ResourceId: eks-ng-0afec768-3cc9d54e-6f03-c581-b046-78c1c8e54e9d
+                ResourceType: auto-scaling-group
+                PropagateAtLaunch: true
+              - Key: k8s.io/cluster-autoscaler/dynatrace-workshop
+                Value: owned
+                ResourceId: eks-ng-0afec768-3cc9d54e-6f03-c581-b046-78c1c8e54e9d
+                ResourceType: auto-scaling-group
+                PropagateAtLaunch: true
+              - Key: k8s.io/cluster-autoscaler/enabled
+                Value: "true"
+                ResourceId: eks-ng-0afec768-3cc9d54e-6f03-c581-b046-78c1c8e54e9d
+                ResourceType: auto-scaling-group
+                PropagateAtLaunch: true
+              - Key: kubernetes.io/cluster/dynatrace-workshop
+                Value: owned
+                ResourceId: eks-ng-0afec768-3cc9d54e-6f03-c581-b046-78c1c8e54e9d
+                ResourceType: auto-scaling-group
+                PropagateAtLaunch: true
+            MaxSize: 2
+            MinSize: 2
+            Instances:
+              - InstanceId: i-026835ff84bd70597
+                HealthStatus: Healthy
+                InstanceType: m5.large
+                LaunchTemplate:
+                  Version: "1"
+                  LaunchTemplateId: lt-02d2bec01b5b43728
+                  LaunchTemplateName: eks-3cc9d54e-6f03-c581-b046-78c1c8e54e9d
+                LifecycleState: InService
+                AvailabilityZone: us-east-1f
+                ProtectedFromScaleIn: false
+              - InstanceId: i-03ee3bdfecbfc91ca
+                HealthStatus: Healthy
+                InstanceType: m5.large
+                LaunchTemplate:
+                  Version: "1"
+                  LaunchTemplateId: lt-02d2bec01b5b43728
+                  LaunchTemplateName: eks-3cc9d54e-6f03-c581-b046-78c1c8e54e9d
+                LifecycleState: InService
+                AvailabilityZone: us-east-1c
+                ProtectedFromScaleIn: false
+            CreatedTime: 2024-12-09T08:51:06.882Z
+            EnabledMetrics:
+              - Metric: GroupTotalInstances
+                Granularity: 1Minute
+              - Metric: GroupStandbyCapacity
+                Granularity: 1Minute
+              - Metric: WarmPoolWarmedCapacity
+                Granularity: 1Minute
+              - Metric: WarmPoolPendingCapacity
+                Granularity: 1Minute
+              - Metric: GroupDesiredCapacity
+                Granularity: 1Minute
+              - Metric: GroupMaxSize
+                Granularity: 1Minute
+              - Metric: WarmPoolDesiredCapacity
+                Granularity: 1Minute
+              - Metric: GroupTotalCapacity
+                Granularity: 1Minute
+              - Metric: GroupAndWarmPoolTotalCapacity
+                Granularity: 1Minute
+              - Metric: GroupInServiceCapacity
+                Granularity: 1Minute
+              - Metric: GroupMinSize
+                Granularity: 1Minute
+              - Metric: GroupAndWarmPoolDesiredCapacity
+                Granularity: 1Minute
+              - Metric: GroupPendingCapacity
+                Granularity: 1Minute
+              - Metric: GroupInServiceInstances
+                Granularity: 1Minute
+              - Metric: GroupPendingInstances
+                Granularity: 1Minute
+              - Metric: GroupTerminatingCapacity
+                Granularity: 1Minute
+              - Metric: GroupStandbyInstances
+                Granularity: 1Minute
+              - Metric: WarmPoolMinSize
+                Granularity: 1Minute
+              - Metric: GroupTerminatingInstances
+                Granularity: 1Minute
+              - Metric: WarmPoolTotalCapacity
+                Granularity: 1Minute
+              - Metric: WarmPoolTerminatingCapacity
+                Granularity: 1Minute
+            TrafficSources: []
+            DefaultCooldown: 300
+            DesiredCapacity: 2
+            HealthCheckType: EC2
+            TargetGroupARNs: []
+            AvailabilityZones:
+              - us-east-1c
+              - us-east-1f
+            CapacityRebalance: true
+            LoadBalancerNames: []
+            VPCZoneIdentifier: subnet-020c747de1a3b6d4e,subnet-0e1ea6e7fa65d2063
+            SuspendedProcesses: []
+            AutoScalingGroupARN: arn:aws:autoscaling:us-east-1:428023525488:autoScalingGroup:7c0ae526-6ebe-4fd9-abe9-3d87c70bd689:autoScalingGroupName/eks-ng-0afec768-3cc9d54e-6f03-c581-b046-78c1c8e54e9d
+            TerminationPolicies:
+              - AllocationStrategy
+              - OldestLaunchTemplate
+              - OldestInstance
+            AutoScalingGroupName: eks-ng-0afec768-3cc9d54e-6f03-c581-b046-78c1c8e54e9d
+            MixedInstancesPolicy:
+              LaunchTemplate:
+                Overrides:
+                  - InstanceType: m5.large
+                LaunchTemplateSpecification:
+                  Version: "1"
+                  LaunchTemplateId: lt-02d2bec01b5b43728
+                  LaunchTemplateName: eks-3cc9d54e-6f03-c581-b046-78c1c8e54e9d
+              InstancesDistribution:
+                SpotInstancePools: 2
+                OnDemandBaseCapacity: 0
+                SpotAllocationStrategy: lowest-price
+                OnDemandAllocationStrategy: prioritized
+                OnDemandPercentageAboveBaseCapacity: 100
+            ServiceLinkedRoleARN: arn:aws:iam::428023525488:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling
+            HealthCheckGracePeriod: 15
+            AvailabilityZoneDistribution:
+              CapacityDistributionStrategy: balanced-best-effort
+            NewInstancesProtectedFromScaleIn: false
+      position:
+        x: 0
+        y: 3
+      predecessors:
+        - fetch_node_group_via_label
+      conditions:
+        states:
+          fetch_node_group_via_label: SUCCESS
+    analyze_auto_scaling_capacity:
+      name: analyze_auto_scaling_capacity
+      description: Build a custom task running js Code
+      action: dynatrace.automations:run-javascript
+      input:
+        script: >-
+          // optional import of sdk modules
+
+          import { execution } from '@dynatrace-sdk/automation-utils';
+
+
+          export default async function ({ executionId }) {
+            // your code goes here
+            // e.g. get the current execution
+            const ex = await execution(executionId);
+            console.log('Automated script execution on behalf of', ex.trigger);
+
+            var asg_group = await ex.result('describe_auto_scaling_groups');
+            
+            var maxCap = asg_group.AutoScalingGroups[0].MaxSize;
+            console.log('Maximum ASG capacity:', maxCap);
+            var desiredCap = asg_group.AutoScalingGroups[0].DesiredCapacity;
+            console.log('Desired ASG capacity:', desiredCap);
+            var currentCap = asg_group.AutoScalingGroups[0].Instances.length;
+            console.log('Current # of instances:', currentCap);
+
+            var triggerScale = false;
+
+            //only increase desiredCap if the current capacity is already at the desired level
+            if(desiredCap === currentCap) {
+              if (desiredCap >= maxCap) {
+                maxCap = maxCap + 2;
+              }
+              desiredCap = desiredCap +1;
+              triggerScale = true;
+            }
+            
+            return { should_scale: triggerScale, desired_capacity: desiredCap, max_capacity: maxCap };
+          }
+      customSampleResult:
+        increase_max: true
+        max_capacity: 2
+        should_scale: false
+        desired_capacity: 3
+      position:
+        x: 0
+        y: 4
+      predecessors:
+        - describe_auto_scaling_groups
+      conditions:
+        states:
+          describe_auto_scaling_groups: SUCCESS
+  description: ""
+  trigger:
+    eventTrigger:
+      filterQuery: >-
+        event.kind == "DAVIS_PROBLEM" AND event.status == "ACTIVE" AND
+        (event.status_transition == "CREATED" OR event.status_transition ==
+        "UPDATED" OR event.status_transition == "REOPENED") AND (event.category
+        == "RESOURCE_CONTENTION") AND (matchesValue(affected_entity_types,
+        "*dt.entity.cloud_application*") AND
+
+        matchesValue(k8s.namespace.name, "orders") AND matchesValue(event.name,
+        "Pods stuck in pending")
+
+        )
+      isActive: true
+      uniqueExpression: '{{ event()["event.id"] }}-{{ "open" if
+        event()["event.status_transition"] in ("CREATED", "UPDATED", "REOPENED",
+        "REFRESHED") else "resolved" }}-{{
+        event()["dt.davis.last_reopen_timestamp"] }}'
+      triggerConfiguration:
+        type: davis-problem
+        value:
+          categories:
+            resource: true
+          entityTags: {}
+          customFilter: >
+            matchesValue(affected_entity_types, "*dt.entity.cloud_application*")
+            AND
+
+            matchesValue(k8s.namespace.name, "orders") AND
+            matchesValue(event.name, "Pods stuck in pending")
+          onProblemClose: false
+          entityTagsMatch: all
+  schemaVersion: 3
+  type: STANDARD
