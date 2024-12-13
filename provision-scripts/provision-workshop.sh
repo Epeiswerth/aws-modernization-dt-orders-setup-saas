@@ -156,6 +156,25 @@ create_dt_aws(){
     }"
 }
 
+enableNewK8sExperience(){
+  curl -X POST \
+    $DT_BASEURL/api/v2/settings/objects \
+    -H "accept: application/json; charset=utf-8" \
+    -H "Authorization: Api-Token $DT_API_TOKEN" \
+    -H "Content-Type: application/json; charset=utf-8" \
+    -d "[{
+      \"schemaId\": \"builtin:app-transition.kubernetes\",
+      \"schemaVersion\": \"1.0.1\",
+      \"scope\": \"environment\",
+      \"value\": { 
+        \"kubernetesAppOptions\": {
+          \"enableKubernetesApp\": true
+        }
+      }
+    }]"
+}
+
+
 echo "==================================================================="
 echo "About to Provision Workshop for:"
 echo "$DT_BASEURL"
@@ -238,6 +257,34 @@ echo "Deploying Kubernetes cluster..."
 eksctl create cluster --with-oidc --ssh-access --version=1.29 --managed --name dynatrace-workshop --tags "Purpose=dynatrace-modernization-workshop" --ssh-public-key ws-default-keypair
 
 echo "Kubernetes cluster deployment complete!"
+
+echo "Deploying K8s Autoscaler..."
+
+aws iam create-policy --policy-name eks-autoscaler-policy --policy-document file://eks-autoscaler/eks-autoscaler-policy.json
+
+eksctl create iamserviceaccount --name cluster-autoscaler --namespace kube-system --cluster dynatrace-workshop --role-name eks-autoscaler-policy \
+    --attach-policy-arn arn:aws:iam::$AWS_ACCT_ID:policy/eks-autoscaler-policy --approve
+
+kubectl apply -f eks-autoscaler/cluster-autoscaler.yaml
+
+echo "K8s Autoscaler deployment complete!"
+
+echo "Call DT API to enable new k8s experience"
+enableNewK8sExperience
+
+echo "Deploying Dynatrace Operator"
+helm install dynatrace-operator oci://public.ecr.aws/dynatrace/dynatrace-operator --version 1.3.2 --create-namespace --namespace dynatrace --atomic --set "webhook.highAvailability=false" --set "operator.requests.cpu=20m" --set "operator.limits.cpu=null" --set "operator.requests.memory=64Mi" --set "operator.limits.memory=64Mi" --set "webhook.requests.cpu=20m" --set "webhook.limits.cpu=null" --set "webhook.requests.memory=64Mi" --set "webhook.limits.memory=128Mi" --set "csidriver.provisioner.resources.requests.cpu=50m" --set "csidriver.server.resources.requests.cpu=30m" --set "csidriver.server.resources.limits.cpu=30m"
+
+echo "Applying Dynakube"
+kubectl apply -f ../gen/dynakube.yaml
+
+echo "Waiting for Dynatrace ActiveGate to be ready"
+kubectl -n dynatrace wait pod --for=condition=ready --selector=app.kubernetes.io/name=dynatrace-operator,app.kubernetes.io/component=activegate --timeout=300s
+
+kubectl create namespace easytrade
+
+kubectl apply -f ../app-scripts/easytrade -n easytrade
+
 }
 
 create_EKS_Workshop_Cluster_w_utilities

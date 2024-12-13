@@ -31,6 +31,12 @@ spec:
         env:
         - name: DT_CUSTOM_PROP
           value: "project=dt-orders service=frontend"
+        resources:
+          requests:
+            cpu: 800m
+            memory: 150Mi
+          limits:
+            memory: 200Mi
 ---
 apiVersion: v1
 kind: Service

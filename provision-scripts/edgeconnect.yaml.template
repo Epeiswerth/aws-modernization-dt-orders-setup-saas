@@ -1,0 +1,56 @@
+apiVersion: dynatrace.com/v1alpha2
+kind: EdgeConnect
+metadata:
+  name: hot-lab-edge-connect
+  namespace: dynatrace
+spec:
+  apiServer: "DT_BASEURL_PLACEHOLDER.apps.dynatrace.com"    #Sprint tenant: "<tenantId>.sprint.apps.dynatracelabs.com"
+  serviceAccountName: edgeconnect-deployment-rollout-restarter
+  hostPatterns:
+    - '*.mycompany.org'
+  oauth:
+    provisioner: true
+    clientSecret: edgeconnect-oauth
+    endpoint: https://sso.dynatrace.com/sso/oauth2/token    #Sprint tenant: https://sso-sprint.dynatracelabs.com/sso/oauth2/token
+    resource: urn:dtenvironment:<tenant>                    #Account-level: urn:dtaccount:<PasteAccountUrn>
+  kubernetesAutomation:
+    enabled: true
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: edgeconnect-oauth
+  namespace: dynatrace
+data:
+  oauth-client-id: <base64 encoded client id>
+  oauth-client-secret: <base64 encoded client secret>
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: edgeconnect-deployment-rollout-restarter
+  namespace: dynatrace
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: edgeconnect-deployment-rollout-restart
+  namespace: dynatrace
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: edgeconnect-deployment-rollout-restart
+  namespace: dynatrace
+roleRef:
+  kind: Role
+  name: edgeconnect-deployment-rollout-restart
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: edgeconnect-deployment-rollout-restarter
+  namespace: dynatrace
