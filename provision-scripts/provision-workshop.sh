@@ -189,7 +189,7 @@ enableNewK8sExperience(){
         \"deploymentStuck\":{\"enabled\":true,\"configuration\":{\"samplePeriodInMinutes\":30,\"observationPeriodInMinutes\":30}},
         \"pendingPods\":{\"enabled\":true,\"configuration\":{\"threshold\":1,\"samplePeriodInMinutes\":2,\"observationPeriodInMinutes\":3}},
         \"podStuckInTerminating\":{\"enabled\":true,\"configuration\":{\"samplePeriodInMinutes\":60,\"observationPeriodInMinutes\":60}},
-        \"workloadWithoutReadyPod\":{\"enabled\":true,\"configuration\":{\"samplePeriodInMinutes\":30,\"observationPeriodInMinutes\":45}},
+        \"workloadWithoutReadyPods\":{\"enabled\":true,\"configuration\":{\"samplePeriodInMinutes\":30,\"observationPeriodInMinutes\":45}},
         \"notAllPodsReady\":{\"enabled\":false},
         \"highMemoryUsage\":{\"enabled\":false},
         \"highCpuUsage\":{\"enabled\":false},
@@ -212,7 +212,7 @@ enableNewK8sExperience(){
       \"scope\":\"environment\",
       \"value\":{
         \"readinessIssues\":{\"enabled\":true,\"configuration\":{\"samplePeriodInMinutes\":30,\"observationPeriodInMinutes\":45}},
-        \"nodeProblematicCondition\":{\"enabled\":true,\"configuration\":{"samplePeriodInMinutes":30,\"observationPeriodInMinutes\":45}},
+        \"nodeProblematicCondition\":{\"enabled\":true,\"configuration\":{\"samplePeriodInMinutes\":30,\"observationPeriodInMinutes\":45}},
         \"cpuRequestsSaturation\":{\"enabled\":false},
         \"memoryRequestsSaturation\":{\"enabled\":false},
         \"podsSaturation\":{\"enabled\":false}
