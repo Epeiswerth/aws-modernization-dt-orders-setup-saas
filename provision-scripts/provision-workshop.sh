@@ -157,9 +157,10 @@ create_dt_aws(){
 }
 
 enableNewK8sExperience(){
+  #Enable Cluster in new K8s App
   curl -X POST \
     $DT_BASEURL/api/v2/settings/objects \
-    -H "accept: application/json; charset=utf-8" \
+    -H "Accept: application/json; charset=utf-8" \
     -H "Authorization: Api-Token $DT_API_TOKEN" \
     -H "Content-Type: application/json; charset=utf-8" \
     -d "[{
@@ -172,6 +173,50 @@ enableNewK8sExperience(){
         }
       }
     }]"
+  
+  #Adjust K8s Anomaly Detection Settings
+  curl -X POST \
+    $DT_BASEURL/api/v2/settings/objects \
+    -H "Accept: application/json; charset=utf-8" \
+    -H "Authorization: Api-Token $DT_API_TOKEN" \
+    -H "Content-Type: application/json; charset=utf-8" \
+    -d "[{
+      \"schemaId\":\"builtin:anomaly-detection.kubernetes.workload\",
+      \"schemaVersion\":\"1.10.1\",
+      \"scope\":\"environment\",
+      \"value\":{
+        \"containerRestarts\":{\"enabled\":false},
+        \"deploymentStuck\":{\"enabled\":true,\"configuration\":{\"samplePeriodInMinutes\":30,\"observationPeriodInMinutes\":30}},
+        \"pendingPods\":{\"enabled\":true,\"configuration\":{\"threshold\":1,\"samplePeriodInMinutes\":2,\"observationPeriodInMinutes\":3}},
+        \"podStuckInTerminating\":{\"enabled\":true,\"configuration\":{\"samplePeriodInMinutes\":60,\"observationPeriodInMinutes\":60}},
+        \"workloadWithoutReadyPod\":{\"enabled\":true,\"configuration\":{\"samplePeriodInMinutes\":30,\"observationPeriodInMinutes\":45}},
+        \"notAllPodsReady\":{\"enabled\":false},
+        \"highMemoryUsage\":{\"enabled\":false},
+        \"highCpuUsage\":{\"enabled\":false},
+        \"highCpuThrottling\":{\"enabled\":false},
+        \"oomKills\":{\"enabled\":true},
+        \"jobFailureEvents\":{\"enabled\":false},
+        \"podBackoffEvents\":{\"enabled\":false},
+        \"podEvictionEvents\":{\"enabled\":false},
+        \"podPreemptionEvents\":{\"enabled\":false}
+      }}]"
+  
+  curl -X POST \
+    $DT_BASEURL/api/v2/settings/objects \
+    -H "Accept: application/json; charset=utf-8" \
+    -H "Authorization: Api-Token $DT_API_TOKEN" \
+    -H "Content-Type: application/json; charset=utf-8" \
+    -d "[{
+      \"schemaId\":\"builtin:anomaly-detection.kubernetes.node\",
+      \"schemaVersion\":\"1.3.1\",
+      \"scope\":\"environment\",
+      \"value\":{
+        \"readinessIssues\":{\"enabled\":true,\"configuration\":{\"samplePeriodInMinutes\":30,\"observationPeriodInMinutes\":45}},
+        \"nodeProblematicCondition\":{\"enabled\":true,\"configuration\":{"samplePeriodInMinutes":30,\"observationPeriodInMinutes\":45}},
+        \"cpuRequestsSaturation\":{\"enabled\":false},
+        \"memoryRequestsSaturation\":{\"enabled\":false},
+        \"podsSaturation\":{\"enabled\":false}
+      }}]"
 }
 
 
